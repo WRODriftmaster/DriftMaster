@@ -1,0 +1,155 @@
+#define S0_PIN 8
+#define S1_PIN 9
+#define S2_PIN 10
+#define S3_PIN 11
+#define OUT_PIN 12
+
+#define TRIG_PIN 7
+#define ECHO_PIN 6
+
+#define IN1_PIN 2
+#define IN2_PIN 3
+#define IN3_PIN 4
+#define IN4_PIN 5
+
+bool isGreenDetected = false;
+
+bool isRedDetected = false;
+
+void setup()
+{
+  // Renk sensörü pinleri
+  pinMode(S0_PIN, OUTPUT);
+  pinMode(S1_PIN, OUTPUT);
+  pinMode(S2_PIN, OUTPUT);
+  pinMode(S3_PIN, OUTPUT);
+  pinMode(OUT_PIN, INPUT);
+
+  // Ultrasonik sensör pinleri
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  // Motor sürücü pinleri
+  pinMode(IN1_PIN, OUTPUT);
+  pinMode(IN2_PIN, OUTPUT);
+  pinMode(IN3_PIN, OUTPUT);
+  pinMode(IN4_PIN, OUTPUT);
+
+  // UART iletişimi başlat
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  int r, g, b;
+  r = process_red_value();
+  delay(200);
+  g = process_green_value();
+  delay(200);
+  b = process_blue_value();
+  delay(200);
+
+  // Renk değerlerini seri monitöre yazdırma
+  Serial.print("r = ");
+  Serial.print(r);
+  Serial.print(" ");
+  Serial.print("g = ");
+  Serial.print(g);
+  Serial.print(" ");
+  Serial.print("b = ");
+  Serial.print(b);
+  Serial.print(" ");
+  Serial.println();
+
+  if (isGreenDetected)
+  {
+    turnLeft();
+    moveForward();
+  }
+  else if (isRedDetected)
+  {
+    // Eğer yeşil algılanmadıysa ileri hareket et
+    turnRight();
+    moveForward();
+  }
+
+  // Ultrasonik sensörden uzaklık ölçümü yapma
+  int distance = getDistance();
+  Serial.print("Uzaklık: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // Belirli bir mesafede yeşil algılama işlevini etkinleştirme
+  if (distance <= 20) // Eşik değeri burada ayarlayabilirsiniz
+  {
+    isGreenDetected = true;
+  }
+  else if (distance <= 20)
+  {
+    isRedDetected = true;
+  }
+
+  delay(100); // Küçük bir gecikme ekleyebilirsiniz.
+}
+
+int process_red_value()
+{
+  digitalWrite(S2_PIN, LOW);
+  digitalWrite(S3_PIN, LOW);
+  delay(10); // Stabilizasyon için küçük bir gecikme
+  int pulse_length = pulseIn(OUT_PIN, LOW);
+  return pulse_length;
+}
+
+int process_green_value()
+{
+  digitalWrite(S2_PIN, HIGH);
+  digitalWrite(S3_PIN, HIGH);
+  delay(10); // Stabilizasyon için küçük bir gecikme
+  int pulse_length = pulseIn(OUT_PIN, LOW);
+  return pulse_length;
+}
+
+int process_blue_value()
+{
+  digitalWrite(S2_PIN, LOW);
+  digitalWrite(S3_PIN, HIGH);
+  delay(10); // Stabilizasyon için küçük bir gecikme
+  int pulse_length = pulseIn(OUT_PIN, LOW);
+  return pulse_length;
+}
+
+
+int getDistance()
+{
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  int distance = duration * 0.034 / 2;
+  return distance;
+}
+
+void moveForward()
+{
+  digitalWrite(IN3_PIN, HIGH);
+  digitalWrite(IN4_PIN, HIGH);
+}
+
+void turnLeft()
+{
+  digitalWrite(IN1_PIN, LOW);
+  digitalWrite(IN2_PIN, LOW);
+  digitalWrite(IN3_PIN, HIGH);
+  digitalWrite(IN4_PIN, HIGH);
+}
+
+void turnRight()
+{
+  digitalWrite(IN1_PIN, HIGH);
+  digitalWrite(IN2_PIN, HIGH);
+  digitalWrite(IN3_PIN, HIGH);
+  digitalWrite(IN4_PIN, HIGH);
+}
